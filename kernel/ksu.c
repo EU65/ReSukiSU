@@ -88,9 +88,7 @@ int __init kernelsu_init(void)
     susfs_init();
 #endif
 
-#ifdef KSU_TP_HOOK
     ksu_ksud_init();
-#endif
 
     ksu_file_wrapper_init();
 

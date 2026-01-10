@@ -68,7 +68,7 @@ static void stop_vfs_read_hook(void);
 static void stop_execve_hook(void);
 static void stop_input_hook(void);
 
-#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
+#ifdef KSU_TP_HOOK
 static struct work_struct stop_vfs_read_work;
 static struct work_struct stop_execve_hook_work;
 static struct work_struct stop_input_hook_work;
@@ -555,7 +555,7 @@ bool ksu_is_safe_mode()
     return false;
 }
 
-#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
+#ifdef KSU_TP_HOOK
 
 static int sys_execve_handler_pre(struct kprobe *p, struct pt_regs *regs)
 {
@@ -646,7 +646,7 @@ static void do_stop_input_hook(struct work_struct *work)
 
 static void stop_vfs_read_hook(void)
 {
-#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
+#ifdef KSU_TP_HOOK
     bool ret = schedule_work(&stop_vfs_read_work);
     pr_info("unregister vfs_read kprobe: %d!\n", ret);
 #else
@@ -657,7 +657,7 @@ static void stop_vfs_read_hook(void)
 
 static void stop_execve_hook(void)
 {
-#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
+#ifdef KSU_TP_HOOK
     bool ret = schedule_work(&stop_execve_hook_work);
     pr_info("unregister execve kprobe: %d!\n", ret);
 #else
@@ -673,7 +673,7 @@ static void stop_input_hook(void)
         return;
     }
     input_hook_stopped = true;
-#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
+#ifdef KSU_TP_HOOK
     bool ret = schedule_work(&stop_input_hook_work);
     pr_info("unregister input kprobe: %d!\n", ret);
 #else
@@ -685,7 +685,7 @@ static void stop_input_hook(void)
 // ksud: module support
 void ksu_ksud_init(void)
 {
-#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
+#ifdef KSU_TP_HOOK
     int ret;
 
     ret = register_kprobe(&execve_kp);
@@ -705,7 +705,7 @@ void ksu_ksud_init(void)
 
 void ksu_ksud_exit(void)
 {
-#if !defined(CONFIG_KSU_SUSFS) && !defined(CONFIG_KSU_MANUAL_HOOK)
+#ifdef KSU_TP_HOOK
     unregister_kprobe(&execve_kp);
     // this should be done before unregister vfs_read_kp
     // unregister_kprobe(&vfs_read_kp);
