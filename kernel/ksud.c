@@ -458,9 +458,9 @@ typedef enum {
     STAT_STAT64 // struct stat64 // 32-bit uses this
 } stat_type_t;
 
-static __always_inline void ksu_common_newfstat_ret(unsigned int *fd,
+static __always_inline void ksu_common_newfstat_ret(unsigned long fd_long,
                                                     void **statbuf_ptr,
-                                                    const bool is_compat)
+                                                    const int type)
 {
     if (!ksu_init_rc_hook) {
         return;
@@ -469,7 +469,7 @@ static __always_inline void ksu_common_newfstat_ret(unsigned int *fd,
     if (!is_init(get_current_cred()))
         return;
 
-    struct file *file = fget(*fd);
+    struct file *file = fget(fd_long);
     if (!file)
         return;
 
@@ -486,16 +486,21 @@ static __always_inline void ksu_common_newfstat_ret(unsigned int *fd,
     if (!statbuf)
         return;
 
-    void __user *st_size_ptr = statbuf + offsetof(struct stat, st_size);
+    void __user *st_size_ptr;
     long size, new_size;
+    size_t len;
 
-#ifdef CONFIG_COMPAT
-    if (is_compat)
-        st_size_ptr =
-            statbuf + offsetof(struct compat_stat, st_size); // compat stat
+    st_size_ptr = statbuf + offsetof(struct stat, st_size);
+    len = sizeof(long);
+
+#if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
+    if (type) {
+        st_size_ptr = statbuf + offsetof(struct stat64, st_size);
+        len = sizeof(long long);
+    }
 #endif
 
-    if (copy_from_user(&size, st_size_ptr, sizeof(long))) {
+    if (copy_from_user(&size, st_size_ptr, len)) {
         pr_info("%s: read statbuf 0x%lx failed \n", __func__,
                 (unsigned long)st_size_ptr);
         return;
@@ -504,7 +509,7 @@ static __always_inline void ksu_common_newfstat_ret(unsigned int *fd,
     new_size = size + ksu_rc_len;
     pr_info("%s: adding ksu_rc_len: %ld -> %ld \n", __func__, size, new_size);
 
-    if (!copy_to_user(st_size_ptr, &new_size, sizeof(long)))
+    if (!copy_to_user(st_size_ptr, &new_size, len))
         pr_info("%s: added ksu_rc_len \n", __func__);
     else
         pr_info("%s: add ksu_rc_len failed: statbuf 0x%lx \n", __func__,
@@ -515,16 +520,20 @@ static __always_inline void ksu_common_newfstat_ret(unsigned int *fd,
 
 void ksu_handle_newfstat_ret(unsigned int *fd, struct stat __user **statbuf_ptr)
 {
+    unsigned long fd_long = (unsigned long)*fd;
+
     // native
-    ksu_common_newfstat_ret(fd, (void **)statbuf_ptr, false);
+    ksu_common_newfstat_ret(fd_long, (void **)statbuf_ptr, STAT_NATIVE);
 }
 
 #if defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_COMPAT_STAT64)
-void ksu_handle_fstat64_ret(unsigned int *fd,
+void ksu_handle_fstat64_ret(unsigned long *fd,
                             struct stat64 __user **statbuf_ptr)
 {
+    unsigned long fd_long = (unsigned long)*fd;
+
     // 32-bit call uses this!
-    ksu_common_newfstat_ret(fd, (void **)statbuf_ptr, STAT_STAT64);
+    ksu_common_newfstat_ret(fd_long, (void **)statbuf_ptr, STAT_STAT64);
 }
 #endif
 
