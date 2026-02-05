@@ -182,6 +182,14 @@ class WebViewInterface(
                 }
             }
         }
+        enableInsets(enable)
+    }
+
+    @JavascriptInterface
+    fun enableInsets(enable: Boolean = true) {
+        if (context is WebUIActivity) {
+            (context as WebUIActivity).enableInsets(enable)
+        }
     }
 
     @JavascriptInterface
@@ -266,6 +274,13 @@ class WebViewInterface(
     @JavascriptInterface
     fun controlKpm(name: String, args: String): Int {
         return controlKpmModule(name, args)
+    }
+
+    @JavascriptInterface
+    fun exit() {
+        if (context is Activity) {
+            (context as Activity).finish()
+        }
     }
 }
 

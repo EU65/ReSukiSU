@@ -21,8 +21,6 @@ const KSU_IOCTL_MANAGE_MARK: i32 = _IOWR::<()>(K, 16);
 const KSU_IOCTL_NUKE_EXT4_SYSFS: i32 = _IOW::<()>(K, 17);
 const KSU_IOCTL_ADD_TRY_UMOUNT: i32 = _IOW::<()>(K, 18);
 
-const SUKISU_IOCTL_DYNAMIC_MANAGER: i32 = _IOWR::<()>(K, 103);
-
 #[repr(C)]
 #[derive(Clone, Copy, Default)]
 struct GetInfoCmd {
@@ -92,14 +90,6 @@ struct AddTryUmountCmd {
     mode: u8,   // denotes what to do with it 0:wipe_list 1:add_to_list 2:delete_entry
 }
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct DynamicManage {
-    operation: u32,
-    size: u32,
-    hash: [u8; 64],
-}
-
 // Mark operation constants
 const KSU_MARK_GET: u32 = 1;
 const KSU_MARK_MARK: u32 = 2;
@@ -110,11 +100,6 @@ const KSU_MARK_REFRESH: u32 = 4;
 const KSU_UMOUNT_WIPE: u8 = 0;
 const KSU_UMOUNT_ADD: u8 = 1;
 const KSU_UMOUNT_DEL: u8 = 2;
-
-// Dynamic Manager operation constants
-const SUKISU_DYNAMIC_MANAGER_SET: u32 = 0;
-const SUKISU_DYNAMIC_MANAGER_GET: u32 = 1;
-const SUKISU_DYNAMIC_MANAGER_CLEAR: u32 = 2;
 
 // Global driver fd cache
 static DRIVER_FD: OnceLock<RawFd> = OnceLock::new();
@@ -336,36 +321,6 @@ pub fn umount_list_del(path: &str) -> anyhow::Result<()> {
         mode: KSU_UMOUNT_DEL,
     };
     ksuctl(KSU_IOCTL_ADD_TRY_UMOUNT, &raw mut cmd)?;
-    Ok(())
-}
-
-pub fn dynamic_manager_set(size: u32, hash: [u8; 64]) -> anyhow::Result<()> {
-    let mut cmd = DynamicManage {
-        operation: SUKISU_DYNAMIC_MANAGER_SET,
-        size,
-        hash,
-    };
-    ksuctl(SUKISU_IOCTL_DYNAMIC_MANAGER, &raw mut cmd)?;
-    Ok(())
-}
-
-pub fn dynamic_manager_get() -> anyhow::Result<(u32, [u8; 64])> {
-    let mut cmd = DynamicManage {
-        operation: SUKISU_DYNAMIC_MANAGER_GET,
-        size: 0,
-        hash: [0u8; 64],
-    };
-    ksuctl(SUKISU_IOCTL_DYNAMIC_MANAGER, &raw mut cmd)?;
-    Ok((cmd.size, cmd.hash))
-}
-
-pub fn dynamic_manager_clear() -> anyhow::Result<()> {
-    let mut cmd = DynamicManage {
-        operation: SUKISU_DYNAMIC_MANAGER_CLEAR,
-        size: 0,
-        hash: [0u8; 64],
-    };
-    ksuctl(SUKISU_IOCTL_DYNAMIC_MANAGER, &raw mut cmd)?;
     Ok(())
 }
 

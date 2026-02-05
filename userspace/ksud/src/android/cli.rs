@@ -9,7 +9,7 @@ use log::LevelFilter;
 use crate::android::susfs;
 use crate::{
     android::{
-        debug, dynamic_manager, feature, init_event, ksucalls,
+        debug, feature, init_event, ksucalls,
         module::{self, module_config},
         profile, sepolicy, su, umount, utils,
     },
@@ -264,15 +264,6 @@ enum Module {
         id: String,
     },
 
-    /// module lua runner
-    #[cfg(all(target_os = "android", target_arch = "aarch64"))]
-    Lua {
-        // module id
-        id: String,
-        // lua function
-        function: String,
-    },
-
     /// list all modules
     List,
 
@@ -409,11 +400,6 @@ enum Kernel {
         #[command(subcommand)]
         command: UmountOp,
     },
-    /// Manage dynamic manager
-    DynamicManager {
-        #[command(subcommand)]
-        command: DynamicManagerOp,
-    },
     /// Notify that module is mounted
     NotifyModuleMounted,
 }
@@ -441,27 +427,6 @@ enum Umount {
     Apply,
     /// Clear custom umount paths (wipe kernel list)
     ClearCustom,
-}
-
-#[derive(clap::Subcommand, Debug)]
-enum DynamicManagerOp {
-    /// Get the signature of the current dynamic manager (size+hash)
-    Get,
-    /// Set the signature of the dynamic manager
-    Set {
-        /// the signature size
-        size: u32,
-        /// the signature hash
-        #[arg(value_parser = dynamic_manager::parse_hash)]
-        hash: [u8; 64],
-    },
-    /// Set the signature of the dynamic manager for apk
-    SetApk {
-        /// the apk path
-        apk: String,
-    },
-    /// Clear the dynamic manager
-    Clear,
 }
 
 #[derive(clap::Subcommand, Debug)]
@@ -562,10 +527,6 @@ pub fn run() -> Result<()> {
                 Module::Enable { id } => module::enable_module(&id),
                 Module::Disable { id } => module::disable_module(&id),
                 Module::Action { id } => module::run_action(&id),
-                #[cfg(all(target_os = "android", target_arch = "aarch64"))]
-                Module::Lua { id, function } => {
-                    module::run_lua(&id, &function, false, true).map_err(|e| anyhow::anyhow!("{e}"))
-                }
                 Module::List => module::list_modules(),
                 Module::Config { command } => {
                     // Get module ID from environment variable
@@ -768,25 +729,6 @@ pub fn run() -> Result<()> {
                 UmountOp::Add { mnt, flags } => ksucalls::umount_list_add(&mnt, flags),
                 UmountOp::Del { mnt } => ksucalls::umount_list_del(&mnt),
                 UmountOp::Wipe => ksucalls::umount_list_wipe().map_err(Into::into),
-            },
-            Kernel::DynamicManager { command } => match command {
-                DynamicManagerOp::Set { size, hash } => dynamic_manager::set(size, hash),
-                DynamicManagerOp::Get => {
-                    let (size, hash) = ksucalls::dynamic_manager_get()?;
-                    println!("size: {}, hash: {}", size, String::from_utf8_lossy(&hash));
-                    Ok(())
-                }
-                DynamicManagerOp::SetApk { apk } => {
-                    let sign = apk_sign::get_apk_signature(&apk)?;
-
-                    let bytes = sign.1.as_bytes();
-
-                    let mut hash = [0u8; 64];
-                    hash.copy_from_slice(bytes);
-
-                    dynamic_manager::set(sign.0, hash)
-                }
-                DynamicManagerOp::Clear => dynamic_manager::clear(),
             },
             Kernel::NotifyModuleMounted => {
                 ksucalls::report_module_mounted();
