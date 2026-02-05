@@ -28,6 +28,7 @@ jobs:
     - name: Build kernelsu.ko
       run: |
         git config --global --add safe.directory /__w/ReSukiSU/ReSukiSU
+        git fetch --unshallow --all
         git checkout 48c12cbd96e3d4e6739ad72fb331245de4edb9c2
         cd kernel
 
