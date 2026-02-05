@@ -9,7 +9,6 @@ on:
       - '.github/workflows/build-lkm.yml'
       - '.github/workflows/ksud.yml'
       - 'manager/**'
-      - 'kernel/**'
       - 'userspace/**'
   pull_request:
     branches: [ "main", "dev", "miuix" ]
