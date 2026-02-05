@@ -5,7 +5,7 @@ config KSU
 	  default y
 	  help
 		Enable kernel-level root privileges on Android System.
-		Choose "m" here to build KernelSU as LKM
+		You can't build LKM in this branch
 
 config KSU_DEBUG
 	  bool "KernelSU debug mode"

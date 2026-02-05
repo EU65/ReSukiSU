@@ -51,7 +51,11 @@ KSU_VERSION_API := 4.1.0
 GIT_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin git
 CURL_BIN := /usr/bin/env PATH="$$PATH":/usr/bin:/usr/local/bin curl
 
-KSU_SRC := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+ifeq ($(findstring $(srctree),$(src)),$(srctree))
+  KSU_SRC := $(src)
+else
+  KSU_SRC := $(srctree)/$(src)
+endif
 
 LOCAL_GIT_EXISTS := $(shell test -e $(KSU_SRC)/../.git && echo 1 || echo 0)
 
@@ -244,6 +248,11 @@ $(info -- You have not integrated susfs in your kernel yet.)
 $(info -- Read: https://gitlab.com/simonpunk/susfs4ksu)
 $(error You should integrate susfs in your kernel.)
 endif
+endif
+
+## deny lkm build
+ifeq ($(CONFIG_KSU), m)
+$(error This branch not support LKM build, you should use main branch!)
 endif
 
 # manual hook check

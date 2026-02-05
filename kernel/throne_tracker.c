@@ -264,7 +264,7 @@ static bool is_uid_exist(uid_t uid, char *package, void *data)
     return exist;
 }
 
-void track_throne(bool prune_only, bool force_search_manager)
+void track_throne(bool prune_only)
 {
     struct list_head uid_list;
     struct uid_data *np, *n;
@@ -273,7 +273,7 @@ void track_throne(bool prune_only, bool force_search_manager)
     loff_t pos = 0;
     loff_t line_start = 0;
     char buf[KSU_MAX_PACKAGE_NAME];
-    bool need_search = force_search_manager;
+    bool need_search = false;
 
     // init uid list head, bitmap
     unsigned long *curr_app_id_map = NULL;

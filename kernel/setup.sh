@@ -41,8 +41,9 @@ setup_kernelsu() {
 	echo "[+] Setting up KernelSU..."
 	# Clone the repository and rename it to KernelSU
 	if [ ! -d "$GKI_ROOT/KernelSU" ]; then
-		git clone https://github.com/ReSukiSU/ReSukiSU KernelSU
-		echo "[+] Repository cloned."
+		git clone https://github.com/SukiSU-Ultra/SukiSU-Ultra SukiSU-Ultra
+		mv SukiSU-Ultra KernelSU
+		echo "[+] Repository cloned and renamed to KernelSU."
 	fi
 	cd "$GKI_ROOT/KernelSU"
 	git stash && echo "[-] Stashed current changes."
@@ -51,7 +52,7 @@ setup_kernelsu() {
 	fi
 	git pull && echo "[+] Repository updated."
 	if [ -z "${1-}" ]; then
-		git checkout main && echo "[-] Checked out main branch."
+		git checkout "$(git describe --abbrev=0 --tags)" && echo "[-] Checked out latest tag."
 	else
 		git checkout "$1" && echo "[-] Checked out $1." || echo "[-] Checkout default branch"
 	fi
